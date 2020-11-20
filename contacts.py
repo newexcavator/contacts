@@ -1,39 +1,52 @@
-from con_mysql import ConMysql
+import pymysql
 
 class Contacts():
 
     def __init__(self):
         super().__init__()
-        self.contacts = [
-            {'num':'1', 'name': '001', 'addr': 'zsj', 'phone': '11111111111'},
-            {'num':'2', 'name': '002', 'addr': 'zsj', 'phone': '22222222222'},
-            {'num':'3', 'name': '003', 'addr': 'zsj', 'phone': '33333333333'}
-        ]
 
-    def createUser(self, num, name, addr, phone):
-        personInfo = {'num':num, 'name':name, 'addr':addr, 'phone':phone}
-        self.contacts.append(personInfo)
+        self.conn = pymysql.connect(
+            host = '127.0.0.1',
+            port = 3306,
+            user = 'root',
+            password = '123456',
+            db = 'contacts',
+            charset = 'utf8'
+        )
+
+    def createUser(self, name, addr, phone):
+        with self.conn.cursor() as cursor:
+            sql = "INSERT INTO sys_user_info(`name`, addr, phone, is_delete) VALUES ('{}', '{}', '{}', 'N')".format(name, addr, phone)
+            cursor.execute(sql)
+            self.conn.commit()
 
     def listAll(self):
-        for person in self.contacts:
+        with self.conn.cursor() as cursor:
+            sql = "SELECT name, addr, phone FROM sys_user_info WHERE is_delete = 'N'"
+            cursor.execute(sql)
+            res = cursor.fetchall()
+        
+        for person in res:
             print(person)
 
     def queryPerson(self, name):
-        for person in self.contacts:
-            if name == person['name']:
-                print(person)
+        with self.conn.cursor() as cursor:
+            sql = "SELECT name, addr, phone  FROM sys_user_info WHERE name = {}".format(name)
+            cursor.execute(sql)
+            res = cursor.fetchone()
+        print(res)
 
     def deletePerson(self, name):
-        for person in self.contacts:
-            if name == person['name']:
-                self.contacts.remove(person)
+        with self.conn.cursor() as cursor:
+            sql = "UPDATE sys_user_info SET IS_DELETE = 'Y' WHERE name = '{}'".format(name)
+            cursor.execute(sql)
+            self.conn.commit()
 
-    def editPerson(self, num, name, addr, phone):
-        for person in self.contacts:
-            if num == person['num']:
-                self.contacts[int(num) - 1]['name'] = name
-                self.contacts[int(num) - 1]['addr'] = addr
-                self.contacts[int(num) - 1]['phone'] = phone
+    def editPerson(self, name, addr, phone, old_name):
+        with self.conn.cursor() as cursor:
+            sql = "UPDATE sys_user_info SET name = '{}', addr = '{}', phone = '{}' WHERE name = '{}'".format(name, addr, phone, old_name)
+            cursor.execute(sql)
+            self.conn.commit()
 
 if __name__ == "__main__":
 
@@ -61,7 +74,7 @@ if __name__ == "__main__":
             name = input("姓名：")
             addr = input("地址：")
             phone = input("手机号码：")
-            contacts.createUser(str(num), name, addr, phone)
+            contacts.createUser(name, addr, phone)
             print("添加成功!")
             contacts.listAll()
             num = num + 1
@@ -79,12 +92,12 @@ if __name__ == "__main__":
         elif inp == 5:
             print("------------------编辑人员------------------")
             print("通讯录总揽")
-            num = input("请输入需要编辑的人员编号（num）：")
+            old_name = input("请输入需要编辑的人员姓名：")
             print("请输入修改后的人员信息")
             name = input("姓名：")
             addr = input("地址：")
             phone = input("手机号码：")
-            contacts.editPerson(num, name, addr, phone)    
+            contacts.editPerson(name, addr, phone, old_name)    
         elif inp == 6:
             print("------------------退出通讯录------------------")
             break
